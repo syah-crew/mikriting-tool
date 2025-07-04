@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Tunnel Monitor</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            background-color: #121212;
+            color: #e0e0e0;
+            padding: 20px;
+            margin: 0;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: auto;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+            border: 1px solid #333;
+            position: relative;
+        }
+
+        h1 {
+            color: #bb86fc;
+            border-bottom: 2px solid #3700b3;
+            padding-bottom: 10px;
+            text-align: center;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 25px;
+            right: 25px;
+            padding: 8px 16px;
+            background-color: #cf6679;
+            color: #121212;
+            text-decoration: none;
+            border-radius: 4px;
+            font-weight: bold;
+            font-size: 0.9em;
+            transition: background-color 0.2s, transform 0.2s;
+        }
+
+        .logout-btn:hover {
+            background-color: #b00020;
+            transform: translateY(-1px);
+        }
+
+        #status {
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .connected {
+            color: #121212;
+            background-color: #03dac6;
+        }
+
+        .disconnected {
+            color: #121212;
+            background-color: #cf6679;
+        }
+
+        #search-box {
+            width: 100%;
+            padding: 12px;
+            margin-bottom: 20px;
+            border: 1px solid #444;
+            border-radius: 4px;
+            box-sizing: border-box;
+            background-color: #2c2c2c;
+            color: #e0e0e0;
+            font-size: 1em;
+        }
+
+        #search-box:focus {
+            outline: none;
+            border-color: #bb86fc;
+            box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.5);
+        }
+
+        #user-list {
+            list-style-type: none;
+            padding: 0;
+        }
+
+        .user-item {
+            background: #2a2a2a;
+            border: 1px solid #383838;
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 6px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            align-items: center;
+            transition: background-color 0.2s;
+        }
+
+        .user-item:hover {
+            background-color: #333333;
+        }
+
+        .user-item div {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-item .label {
+            font-size: 0.8em;
+            color: #aaa;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .user-item .value {
+            font-weight: 500;
+            font-size: 1.1em;
+        }
+
+        .user-item .name {
+            color: #81d4fa;
+            font-weight: bold;
+        }
+
+        .address-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .copy-btn {
+            padding: 4px 8px;
+            font-size: 0.8em;
+            background-color: #3700b3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .copy-btn:hover {
+            background-color: #6200ee;
+        }
+
+        .copy-btn.copied {
+            background-color: #03dac6;
+            color: #121212;
+            cursor: default;
+        }
+
+        .latency-good {
+            color: #81c784;
+        }
+
+        .latency-warn {
+            color: #ffd54f;
+        }
+
+        .latency-bad {
+            color: #e57373;
+        }
+
+        .no-latency {
+            color: #757575;
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <a href="/logout" class="logout-btn">Logout</a>
+        <h1>Dashboard Tunnel Active</h1>
+        <div id="status">Menyambungkan...</div>
+        <input type="text" id="search-box" placeholder="Cari berdasarkan nama atau alamat ip...">
+        <ul id="user-list">
+            <li style="text-align: center; padding: 20px; color: #888;">Tunggu bro lagi ngumpulin data dari server...</li>
+        </ul>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const statusDiv = document.getElementById("status");
+            const listUl = document.getElementById("user-list");
+            const searchBox = document.getElementById("search-box");
+            let allUsers = [];
+
+            function getLatencyClass(latency) {
+                if (latency === null || typeof latency === 'undefined') return 'no-latency';
+                if (latency < 100) return 'latency-good';
+                if (latency < 300) return 'latency-warn';
+                return 'latency-bad';
+            }
+
+            function renderUsers(usersToRender) {
+                usersToRender.sort((a, b) => a.name.localeCompare(b.name));
+                listUl.innerHTML = '';
+                if (usersToRender.length === 0) {
+                    listUl.innerHTML = '<li style="text-align: center; padding: 20px; color: #888;">Tidak ada koneksi yang cocok.</li>';
+                    return;
+                }
+                usersToRender.forEach(user => {
+                    const li = document.createElement("li");
+                    li.className = "user-item";
+                    li.dataset.name = user.name;
+                    const latencyVal = user.latency !== null && typeof user.latency !== 'undefined' ? user.latency.toFixed(2) + ' ms' : 'Timeout';
+                    const latencyClass = getLatencyClass(user.latency);
+                    li.innerHTML = `
+                        <div>
+                            <span class="label">Akun Koneksi</span>
+                            <span class="value name">${user.name}</span>
+                        </div>
+                        <div>
+                            <span class="label">Toko</span>
+                            <span class="value">${user.comment ?? 'Guest'}</span>
+                        </div>
+                        <div class="address-container">
+                            <div>
+                                <span class="label">Address</span>
+                                <span class="value">${user.address}</span>
+                            </div>
+                            <button class="copy-btn" data-address="${user.address}">Copy</button>
+                        </div>
+                        <div>
+                            <span class="label">Latency</span>
+                            <span class="value ${latencyClass}">${latencyVal}</span>
+                        </div>
+                    `;
+                    listUl.appendChild(li);
+                });
+            }
+
+            listUl.addEventListener('click', (e) => {
+                if (e.target && e.target.classList.contains('copy-btn')) {
+                    const button = e.target;
+                    const addressToCopy = button.dataset.address;
+                    navigator.clipboard.writeText(addressToCopy).then(() => {
+                        button.textContent = 'Copied!';
+                        button.classList.add('copied');
+                        button.disabled = true;
+                        setTimeout(() => {
+                            button.textContent = 'Copy';
+                            button.classList.remove('copied');
+                            button.disabled = false;
+                        }, 2000);
+                    }).catch(err => {
+                        console.error('Gagal menyalin alamat: ', err);
+                        alert('Gagal menyalin alamat.');
+                    });
+                }
+            });
+
+            searchBox.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredUsers = allUsers.filter(user =>
+                    user.name.toLowerCase().includes(searchTerm) ||
+                    user.address.toLowerCase().includes(searchTerm)
+                );
+                renderUsers(filteredUsers);
+            });
+
+            function connect() {
+                const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+                const socket = new WebSocket(`${protocol}//${window.location.host}/ws`);
+                socket.onopen = () => {
+                    statusDiv.textContent = "Status: Terhubung Bre";
+                    statusDiv.className = "connected";
+                };
+                socket.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        if (Array.isArray(data)) {
+                            // Full data user, render ulang semua
+                            allUsers = data;
+                            const searchTerm = searchBox.value.toLowerCase();
+                            const usersToRender = searchTerm ? allUsers.filter(user => user.name.toLowerCase().includes(searchTerm) || user.address.toLowerCase().includes(searchTerm)) : allUsers;
+                            renderUsers(usersToRender);
+                        } else if (data.type === "latency") {
+                            // Hanya update latency user tertentu
+                            const idx = allUsers.findIndex(u => u.name === data.name);
+                            if (idx !== -1) {
+                                allUsers[idx].latency = data.latency;
+                                // Update DOM langsung tanpa render ulang semua
+                                const li = listUl.querySelector(`li[data-name="${data.name}"]`);
+                                if (li) {
+                                    const latencyVal = data.latency !== null && typeof data.latency !== 'undefined' ? data.latency.toFixed(2) + ' ms' : 'Timeout';
+                                    const latencyClass = getLatencyClass(data.latency);
+                                    const latencySpan = li.querySelector('.value.latency-good, .value.latency-warn, .value.latency-bad, .value.no-latency');
+                                    if (latencySpan) {
+                                        latencySpan.textContent = latencyVal;
+                                        latencySpan.className = `value ${latencyClass}`;
+                                    }
+                                }
+                            }
+                        }
+                    } catch (e) {
+                        console.error("Failed to parse JSON:", e);
+                        listUl.innerHTML = '<li>Error: Gagal memproses data dari server.</li>';
+                    }
+                };
+                socket.onclose = () => {
+                    statusDiv.textContent = "Status: Terputus. Mencoba menyambung ulang...";
+                    statusDiv.className = "disconnected";
+                    setTimeout(connect, 3000);
+                };
+                socket.onerror = (error) => {
+                    console.error("WebSocket error: ", error);
+                };
+            }
+
+            connect();
+        });
+    </script>
+</body>
+
+</html>

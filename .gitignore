@@ -1,0 +1,38 @@
+# Rust artifacts
+/target/
+**/*.rs.bk
+*.pdb
+Cargo.lock
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+*.swp
+*.swo
+*~
+
+# Configuration files
+config.toml
+.htpasswd
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.local
+.env.production
+.env.staging
+
+# Test outputs
+test-results/
+coverage/
+
+# Temporary files
+tmp/
+temp/

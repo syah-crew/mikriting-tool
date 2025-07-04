@@ -1,0 +1,40 @@
+# mikriting-tool Configuration Example
+# Copy this file to config.toml and modify as needed
+
+[app]
+# Log level: trace, debug, info, warn, error
+log_level = "info"
+
+# Server bind address
+bind_address = "127.0.0.1"
+
+# Server bind port
+bind_port = 3217
+
+# Path to static files (HTML, CSS, JS)
+static_files_path = "./asset"
+
+# Session secret key (change this in production!)
+session_secret = "your-secret-key-here-change-me"
+
+# Ping interval in seconds
+ping_interval_seconds = 2
+
+[mikrotik]
+# Protocol: http or https
+protocol = "https"
+
+# MikroTik router address
+address = "192.168.1.1"
+
+# MikroTik REST API port (default: 4343 for HTTPS, 80 for HTTP)
+port = 4343
+
+# MikroTik username
+username = "admin"
+
+# MikroTik password
+password = "your-password"
+
+# Request timeout in seconds
+timeout_seconds = 10
