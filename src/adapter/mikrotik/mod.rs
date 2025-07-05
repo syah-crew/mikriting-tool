@@ -2,4 +2,5 @@ pub mod client;
 pub mod types;
 
 pub use client::*;
-// pub use types::*;
+#[allow(unused_imports)]
+pub use types::*;
